@@ -1,0 +1,7 @@
+# environment.yml
+name: berlin_bike_accidents
+channels:
+- conda-forge
+dependencies:
+- python==3.10.9
+- geemap==0.19.6
