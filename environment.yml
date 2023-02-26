@@ -5,3 +5,4 @@ channels:
 dependencies:
 - python==3.10.9
 - geemap==0.19.6
+- geopandas==0.12.2
