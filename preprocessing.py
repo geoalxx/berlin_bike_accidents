@@ -55,7 +55,7 @@ def preprocSpeedLimit(row):
     return time_from, time_to, day_from, day_to
 
 
-def preprocRoadPrio(row):
+def preprocRoadRank(row):
     # exclude 'Autobahn' -> no bike access allowed
     if row['strassen_1'] == 'A' or row['strassen_2'] == 'AUBA':
         return 0
@@ -77,6 +77,23 @@ def preprocRoadPrio(row):
     return 2
 
 
+def preprocRVARank(row):
+    if row['rva_typ'] == 'Radwege':
+        if row['sorvt_typ'] == 'Radfahrerfurt Z 340':
+            # classified as 'Radweg', however, road needs to be crossed and therefore less safe
+            return 2
+        else:
+            return 3
+    elif row['rva_typ'] == 'Schutzstreifen':
+        return 2
+    elif row['rva_typ'] == 'Radfahrstreifen':
+        return 2
+    elif row['rva_typ'] == 'Bussonderfahrstreifen':
+        return 1
+
+    return 0
+
+
 # init
 path = 'C:/Python/berlin_bike_accidents/'
 dir_input = 'data/'
@@ -85,11 +102,6 @@ gpkg_name = 'map_data.gpkg'
 
 # target CRS for Berlin (UTM zone 33N)
 target_crs = '25833'
-
-if 'G' in ('B','L','S','K','G','E'):
-    print("in")
-else:
-    print("out")
 
 """
 Preprocessing: 
@@ -164,7 +176,7 @@ file_name = 'fis_strassenabschnitte'
 df_roads = gpd.read_file(path + dir_input + f'{file_name}.shp',
                          ignore_fields=['strassensc', 'bezirk', 'stadtteil', 'verkehrseb', 'beginnt_be', 'endet_bei_',
                                         'laenge', 'gueltig_vo', 'okstra_id'])
-df_roads['prio'] = df_roads.apply(preprocRoadPrio, axis=1)
+df_roads['rank'] = df_roads.apply(preprocRoadRank, axis=1)
 df_roads = setCRS(df_roads, target_crs)
 df_roads.to_file(path + dir_output + gpkg_name, layer=file_name, driver='GPKG')
 
@@ -182,6 +194,7 @@ df_speed.to_file(path + dir_output + gpkg_name, layer=file_name, driver='GPKG')
 file_name = 'fis_rva'
 df_rva = gpd.read_file(path + dir_input + f'{file_name}.shp',
                        ignore_fields=['segm_bez', 'stst_str', 'stor_name', 'ortstl', 'laenge'])
+df_rva['rank'] = df_rva.apply(preprocRVARank, axis=1)
 df_rva = setCRS(df_rva, target_crs)
 df_rva.to_file(path + dir_output + gpkg_name, layer=file_name, driver='GPKG')
 
