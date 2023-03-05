@@ -1,3 +1,4 @@
+import configparser
 import pandas as pd
 import geopandas as gpd
 import warnings
@@ -94,14 +95,16 @@ def preprocRVARank(row):
     return 0
 
 
-# init
-path = 'C:/Python/berlin_bike_accidents/'
-dir_input = 'data/'
-dir_output = 'output/'
-gpkg_name = 'map_data.gpkg'
+# read local config.ini file
+config = configparser.ConfigParser()
+config.read('config.ini')
 
-# target CRS for Berlin (UTM zone 33N)
-target_crs = '25833'
+# get from config.ini
+path = config['FILE_SETTINGS']['PATH']
+dir_input = config['FILE_SETTINGS']['DIR_INPUT']
+dir_output = config['FILE_SETTINGS']['DIR_OUTPUT']
+gpkg_out = path + dir_output + config['FILE_SETTINGS']['GPKG_NAME']
+target_crs = config['CONFIG']['TARGET_CRS']
 
 """
 Preprocessing: 
@@ -167,7 +170,7 @@ for df in files:
 # add bike accidents as layer to GeoPackage
 df_bike_acc_all = pd.concat(dfs, ignore_index=True)
 df_bike_acc_all['GUID'] = df_bike_acc_all.index
-df_bike_acc_all.to_file(path + dir_output + gpkg_name, layer='bike_accidents', driver='GPKG')
+df_bike_acc_all.to_file(gpkg_out, layer='bike_accidents', driver='GPKG')
 
 ### ShapeFiles from FIS broker and add to GeoPackage
 
@@ -175,10 +178,10 @@ df_bike_acc_all.to_file(path + dir_output + gpkg_name, layer='bike_accidents', d
 file_name = 'fis_strassenabschnitte'
 df_roads = gpd.read_file(path + dir_input + f'{file_name}.shp',
                          ignore_fields=['strassensc', 'bezirk', 'stadtteil', 'verkehrseb', 'beginnt_be', 'endet_bei_',
-                                        'laenge', 'gueltig_vo', 'okstra_id'])
+                                        'gueltig_vo', 'okstra_id'])
 df_roads['rank'] = df_roads.apply(preprocRoadRank, axis=1)
 df_roads = setCRS(df_roads, target_crs)
-df_roads.to_file(path + dir_output + gpkg_name, layer=file_name, driver='GPKG')
+df_roads.to_file(gpkg_out, layer=file_name, driver='GPKG')
 
 # speed limit data
 file_name = 'fis_tempolimit'
@@ -188,14 +191,14 @@ for idx, row in df_speed.iterrows():
         idx, 'day_to'] = preprocSpeedLimit(row)
 df_speed['date'] = pd.to_datetime(df_speed['dat_t'], format='%d.%m.%Y')
 df_speed = setCRS(df_speed, target_crs)
-df_speed.to_file(path + dir_output + gpkg_name, layer=file_name, driver='GPKG')
+df_speed.to_file(gpkg_out, layer=file_name, driver='GPKG')
 
 # bicycle lane data
 file_name = 'fis_rva'
 df_rva = gpd.read_file(path + dir_input + f'{file_name}.shp',
                        ignore_fields=['segm_bez', 'stst_str', 'stor_name', 'ortstl', 'laenge'])
-df_rva['rank'] = df_rva.apply(preprocRVARank, axis=1)
+df_rva['rank'] = df_rva.apply(preprocRVARank, axis=1).astype('Int64')
 df_rva = setCRS(df_rva, target_crs)
-df_rva.to_file(path + dir_output + gpkg_name, layer=file_name, driver='GPKG')
+df_rva.to_file(gpkg_out, layer=file_name, driver='GPKG')
 
 print("--- End Processing ---")
