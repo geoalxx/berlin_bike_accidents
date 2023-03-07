@@ -1,4 +1,5 @@
 import configparser
+import ast
 import numpy as np
 import pandas as pd
 import geopandas as gpd
@@ -44,9 +45,6 @@ def addHorizontalConnectors(ax, rows):
             ax.plot([j + width / 2, j + 1 - width / 2], [h0, h1], color='grey', ls='--', zorder=1, linewidth=0.8)
 
 
-colors3 = ['#fdccb8', '#fb7757', '#ce1a1e']
-colors4 = ['#fdccb8', '#fc9a7b', '#f6563d', '#ce1a1e']
-
 # read local config.ini file
 config = configparser.ConfigParser()
 config.read('config.ini')
@@ -55,6 +53,8 @@ config.read('config.ini')
 path = config['FILE_SETTINGS']['PATH']
 dir_output = config['FILE_SETTINGS']['DIR_OUTPUT']
 gpkg_src = path + dir_output + config['FILE_SETTINGS']['GPKG_NAME']
+colors3 = ast.literal_eval(config['CONFIG']['COLORS3'])
+colors4 = ast.literal_eval(config['CONFIG']['COLORS4'])
 
 # read preprocessed files
 print("--- Read and prepare data ---")
@@ -228,93 +228,3 @@ plt.suptitle('Prozentuale Verteilung von Fahrradunfällen nach Straßenbedingung
 plt.tight_layout(w_pad=1, pad=1.5)
 fig.subplots_adjust(right=0.9)
 plt.show()
-
-##
-
-
-
-
-
-"""
-
-
-# https://pysal.org/esda/notebooks/adbscan_berlin_example.html
-
-import contextily as cx
-import matplotlib.pyplot as plt
-from shapely.geometry import Polygon
-from libpysal.cg.alpha_shapes import alpha_shape_auto
-from esda.adbscan import ADBSCAN, get_cluster_boundary, remap_lbls
-
-db = df_bike_acc_all
-ax = db.plot(markersize=0.1, color='orange')
-cx.add_basemap(ax, crs=db.crs.to_string())
-plt.show()
-
-db["X"] = db.geometry.x
-db["Y"] = db.geometry.y
-
-db.shape[0] * 0.01
-
-# Get clusters
-adbs = ADBSCAN(100, 40, pct_exact=0.5, reps=10, keep_solus=True)
-np.random.seed(1234)
-adbs.fit(db)
-
-ax = db.assign(lbls=adbs.votes["lbls"])\
-       .plot(column="lbls",
-             categorical=True,
-             markersize=2.5,
-             figsize=(12, 12)
-            )
-cx.add_basemap(ax, crs=db.crs.to_string())
-plt.show()
-
-polys = get_cluster_boundary(adbs.votes["lbls"], db, crs=db.crs)
-
-ax = polys.plot(alpha=0.5, color="red")
-cx.add_basemap(ax, crs=polys.crs.to_string())
-plt.show()
-
-gdf = gpd.GeoDataFrame(geometry=polys)
-
-f, axs = plt.subplots(1, 4, figsize=(18, 6))
-for i, ax in enumerate(axs):
-    # Plot the boundary of the cluster found
-    ax = polys[[i]].plot(ax=ax,
-                         edgecolor="red",
-                         facecolor="none"
-                        )
-    # Add basemap
-    cx.add_basemap(ax,
-                   crs=polys.crs.to_string(),
-                   url=cx.providers.CartoDB.Voyager,
-                   zoom=13
-                  )
-    # Extra to dim non-cluster areas
-    (minX, maxX), (minY, maxY) = ax.get_xlim(), ax.get_ylim()
-    bb = Polygon([(minX, minY),
-                  (maxX, minY),
-                  (maxX, maxY),
-                  (minX, maxY),
-                  (minX, minY)
-                 ])
-    gpd.GeoSeries([bb.difference(polys[i])],
-                        crs=polys.crs
-                       ).plot(ax=ax,
-                              color='k',
-                              alpha=0.5
-                             )
-    ax.set_axis_off()
-    ax.set_title(f"Cluster {polys[[i]].index[0]}")
-plt.show()
-
-
-x = gpd.sjoin(db, gdf,how='inner', predicate='intersects')
-
-res = x.groupby(['index_right'])['index_right'].count()
-
-gdf.to_file(path + dir_output + gpkg_name_buf, layer='cluster', driver='GPKG')
-
-
-"""
