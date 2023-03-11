@@ -1,8 +1,10 @@
+## Init
 import configparser
 import ast
 import numpy as np
 import pandas as pd
 import geopandas as gpd
+from scipy import stats
 import seaborn as sns
 import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
@@ -14,13 +16,13 @@ warnings.filterwarnings("ignore")  # ignore warnings
 
 def addBarLabels(ax):
     for bars in ax.containers:
-        labels = [f'{x:.1%}' for x in bars.datavalues]
+        labels = [f'{x:.1%}' if x > 0.01 else '' for x in bars.datavalues]
         ax.bar_label(bars, labels=labels, label_type='center', fontsize=8)
 
 
-def addBarTotals(totals):
+def addBarTotals(totals, pad):
     for i, t in enumerate(totals):
-        ax.text(i, 1.075, f'n={t}', ha='center', fontsize=8, color='grey')
+        ax.text(i, pad, f'n={t}', ha='center', fontsize=8, color='grey')
 
 
 def addVerticalConnectors(ax, rows):
@@ -44,6 +46,17 @@ def addHorizontalConnectors(ax, rows):
             h1 = np.sum([ax.patches[j + 1 + rows * k].get_height() for k in range(0, i + 1)])
             ax.plot([j + width / 2, j + 1 - width / 2], [h0, h1], color='grey', ls='--', zorder=1, linewidth=0.8)
 
+
+def setAxisStyle(xlabel, xticklabels, x_frame_on, y_visible):
+    ax.set_xlabel(xlabel)
+    ax.set_xticklabels(xticklabels, rotation=0, fontsize=8)
+    ax.set(frame_on=x_frame_on)
+    ax.yaxis.set_visible(y_visible)
+
+
+"""
+Read config and data
+"""
 
 # read local config.ini file
 config = configparser.ConfigParser()
@@ -200,21 +213,15 @@ fig, (ax1,ax2) = plt.subplots(ncols=2, sharey=True, figsize=(12, 4), gridspec_kw
 ax = crosstab_rva_norm.T.plot.bar(stacked=True, ax=ax1, legend=False, width=0.75, color=colors3)
 addBarLabels(ax)
 addHorizontalConnectors(ax, len(crosstab_rva_norm.T))
-addBarTotals(crosstab_rva.loc['All'][0:4])
-ax.set_xlabel('')
-ax.set_xticklabels(x_axis_labels_rva, rotation=0, fontsize=8)
-ax.set(frame_on=False)
-ax.yaxis.set_visible(False)
+addBarTotals(crosstab_rva.loc['All'][0:4], 1.02)
+setAxisStyle('', x_axis_labels_rva, False, False)
 
 # stacked bars for speed limit
 ax = crosstab_speed_sel_norm.T.plot.bar(stacked=True, ax=ax2, legend=False, width=0.75, color=colors3)
 addBarLabels(ax)
 addHorizontalConnectors(ax, len(crosstab_speed_sel_norm.T))
-addBarTotals(crosstab_speed_sel.loc['All'][0:3])
-ax.xaxis.set_tick_params(labelsize=8, rotation=0)
-ax.set_xlabel('Tempolimit (km/h)')
-ax.set(frame_on=False)
-ax.yaxis.set_visible(False)
+addBarTotals(crosstab_speed_sel.loc['All'][0:3], 1.02)
+setAxisStyle('Tempolimit (km/h)', ax.get_xticklabels(), False, False)
 
 # create joint legend
 handles, labels = ax.get_legend_handles_labels()
@@ -228,3 +235,84 @@ plt.suptitle('Prozentuale Verteilung von Fahrradunfällen nach Straßenbedingung
 plt.tight_layout(w_pad=1, pad=1.5)
 fig.subplots_adjust(right=0.9)
 plt.show()
+
+##
+"""
+Statistics
+"""
+
+res_speed = stats.spearmanr(df_bike_acc_speed_sel['UKATEGORIE'], df_bike_acc_speed_sel['speed_der'])
+print(f'Correlation (UKATEGORIE x Speed): {res_speed.correlation:.4}, p-value: {res_speed.pvalue:.4}')
+
+res_speed = stats.spearmanr(df_bike_acc['UKATEGORIE'], df_bike_acc['rank_rva'], alternative='two-sided')
+print(f'Correlation (UKATEGORIE x RVA): {res_speed.correlation:.4}, p-value: {res_speed.pvalue:.4}')
+
+
+corr_matrix = df_bike_acc_speed_sel[['UKATEGORIE','speed_der','rank_rva']].corr(method="spearman")
+print(corr_matrix)
+sns.heatmap(corr_matrix, annot=True)
+plt.show()
+"""
+Outlook: Analysis of accident type 
+"""
+
+## crosstab with percentage values (filtered for speed limits 30, 50, 60)
+# -> normalized by columns
+print("\n- stacked bars for accident type and road condition\n")
+
+crosstab_speed_sel = pd.crosstab(df_bike_acc_speed_sel['UART'],df_bike_acc_speed_sel['speed_der'],margins=True)
+
+crosstab_speed_sel_norm = pd.crosstab(df_bike_acc_speed_sel['UART'],df_bike_acc_speed_sel['speed_der'],normalize='columns').sort_index(ascending=False)
+crosstab_rva_norm = pd.crosstab(df_bike_acc['UART'],df_bike_acc['rank_rva'],normalize='columns').sort_index(ascending=False)
+
+print(crosstab_speed_sel_norm)
+print(crosstab_rva_norm)
+
+## combined horizontal stacked bar plots based on severity
+
+y_axis_labels = ['Unfall anderer Art',
+                 'Zusammenstoß mit anfahrendem/\nanhaltendem/ruhendem Fahrzeug',
+                 'Zusammenstoß mit vorausfahrendem/\nwartendem Fahrzeug',
+                 'Zusammenstoß mit seitlich in\ngleicher Richtung fahrendem Fahrzeug',
+                 'Zusammenstoß mit entgegen-\nkommendem Fahrzeug',
+                 'Zusammenstoß mit einbiegendem/\nkreuzendem Fahrzeug',
+                 'Zusammenstoß zwischen Fahrzeug\nund Fußgänger',
+                 'Aufprall auf Fahrbahnhindernis',
+                 'Abkommen von Fahrbahn nach rechts',
+                 'Abkommen von Fahrbahn nach links'] # labels for y-axis
+
+cmap = plt.get_cmap("Paired")
+y = crosstab_rva_norm.index
+rescale = lambda y: (y - np.min(y)) / (np.max(y) - np.min(y))
+
+# start plotting...
+fig, (ax1,ax2) = plt.subplots(ncols=2, sharey=True, figsize=(12, 8), gridspec_kw={'width_ratios':[0.8,0.6]})
+
+# stacked bars for RVA
+ax = crosstab_rva_norm.T.plot.bar(stacked=True, ax=ax1, legend=False, width=0.75, color=cmap(rescale(y)))
+addBarLabels(ax)
+addHorizontalConnectors(ax, len(crosstab_rva_norm.T))
+addBarTotals(crosstab_rva.loc['All'][0:4], 1.01)
+setAxisStyle('', x_axis_labels_rva, False, False)
+
+# stacked bars for speed limit
+ax = crosstab_speed_sel_norm.T.plot.bar(stacked=True, ax=ax2, legend=False, width=0.75, color=cmap(rescale(y)))
+addBarLabels(ax)
+addHorizontalConnectors(ax, len(crosstab_speed_sel_norm.T))
+addBarTotals(crosstab_speed_sel.loc['All'][0:3], 1.01)
+setAxisStyle('Tempolimit (km/h)', ax.get_xticklabels(), False, False)
+
+# create joint legend
+handles, labels = ax.get_legend_handles_labels()
+leg = fig.legend([ax1, ax2], handles=reversed(handles), labels=y_axis_labels,
+           loc=1, bbox_to_anchor=(0.975,0.89),
+           frameon=False, title='Unfallart', fontsize=8)
+leg._legend_box.align = "left"
+
+# finish plotting...
+plt.suptitle('Prozentuale Verteilung von Fahrradunfällen nach Straßenbedingung', fontsize=16)
+plt.tight_layout(w_pad=1, pad=1.5)
+fig.subplots_adjust(right=0.75)
+plt.show()
+
+###
