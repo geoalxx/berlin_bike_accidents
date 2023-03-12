@@ -63,9 +63,8 @@ config = configparser.ConfigParser()
 config.read('config.ini')
 
 # get from config.ini
-path = config['FILE_SETTINGS']['PATH']
 dir_output = config['FILE_SETTINGS']['DIR_OUTPUT']
-gpkg_src = path + dir_output + config['FILE_SETTINGS']['GPKG_NAME']
+gpkg_src = dir_output + config['FILE_SETTINGS']['GPKG_NAME']
 colors3 = ast.literal_eval(config['CONFIG']['COLORS3'])
 colors4 = ast.literal_eval(config['CONFIG']['COLORS4'])
 
