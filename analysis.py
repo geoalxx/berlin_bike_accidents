@@ -22,7 +22,7 @@ def addBarLabels(ax):
 
 def addBarTotals(totals, pad):
     for i, t in enumerate(totals):
-        ax.text(i, pad, f'n={t}', ha='center', fontsize=8, color='grey')
+        ax.text(i, pad, f'n={t}', ha='center', fontsize=8, color='grey')#, weight='bold')
 
 
 def addVerticalConnectors(ax, rows):
@@ -242,16 +242,11 @@ Statistics
 """
 
 res_speed = stats.spearmanr(df_bike_acc_speed_sel['UKATEGORIE'], df_bike_acc_speed_sel['speed_der'])
-print(f'Correlation (UKATEGORIE x Speed): {res_speed.correlation:.4}, p-value: {res_speed.pvalue:.4}')
+print(f'Correlation (UKATEGORIE x Speed): {res_speed.correlation:.5f}, p-value: {res_speed.pvalue:.5f}')
 
 res_speed = stats.spearmanr(df_bike_acc['UKATEGORIE'], df_bike_acc['rank_rva'], alternative='two-sided')
-print(f'Correlation (UKATEGORIE x RVA): {res_speed.correlation:.4}, p-value: {res_speed.pvalue:.4}')
+print(f'Correlation (UKATEGORIE x RVA): {res_speed.correlation:.5f}, p-value: {res_speed.pvalue:.5f}')
 
-
-corr_matrix = df_bike_acc_speed_sel[['UKATEGORIE','speed_der','rank_rva']].corr(method="spearman")
-print(corr_matrix)
-sns.heatmap(corr_matrix, annot=True)
-plt.show()
 """
 Outlook: Analysis of accident type 
 """
