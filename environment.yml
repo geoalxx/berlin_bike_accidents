@@ -6,3 +6,5 @@ dependencies:
 - python==3.10.9
 - geopandas==0.12.2
 - seaborn==0.12.2
+- esda==2.4.1
+- contextily==1.2.0
