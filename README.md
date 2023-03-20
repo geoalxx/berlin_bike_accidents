@@ -3,12 +3,14 @@
 ## About
 
 The statistical offices of the German federal and state governments publish all traffic accidents on a yearly basis in a 
-so-called "Accident Atlas" (DE: Unfallatlas). Purpose of this project is to enrich the available datasets by additional 
-information from other sources. In the first steps, that includes speed limits and bicycle infrastructure (RVA) such as bike lanes.
-By extending the accident data by road conditions such as speed limit and RVA, a more comprehensive analysis regarding 
+so-called "Accident Atlas" (DE: Unfallatlas). 
+
+Purpose of this project is to enrich the available datasets by additional information from other sources. In the first steps, 
+that includes speed limits and bicycle infrastructure (RVA), e.g. bike lanes or bike paths.
+By extending the accident data by road conditions such as maximum speed limit and RVA, a more comprehensive analysis regarding 
 road safety can be conducted. 
 
-![](public/readme_overview.png)
+<img src="public/readme_overview.png" width="600">
 
 ## Data Sources
 
@@ -16,6 +18,11 @@ road safety can be conducted.
 - Berlin road network: [FIS Broker / Detailnetz Berlin](https://fbinter.stadt-berlin.de/fb/index.jsp?loginkey=zoomStart&mapId=k_vms_detailnetz_wms_spatial@senstadt&bbox=388980,5818643,394311,5822417)
 - Berlin speed limits: [FIS Broker / Tempolimits](https://fbinter.stadt-berlin.de/fb/index.jsp?loginkey=zoomStart&mapId=k_vms_tempolimits_spatial@senstadt&bbox=388980,5818643,394311,5822417)
 - Berlin bicycle infrastructure: [FIS Broker / Radverkehrsanlagen](https://fbinter.stadt-berlin.de/fb/index.jsp?loginkey=zoomStart&mapId=wmsk_radverkehrsanlagen@senstadt&bbox=383956,5818321,392703,5824512)
+
+## Config
+
+For now, the `config.ini` can be used to adjust the file settings (e.g. file/folder names), modify the target CRS or 
+change the color palette used in the plots. 
 
 ## Workflow
 
