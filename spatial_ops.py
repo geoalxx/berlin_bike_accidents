@@ -54,14 +54,14 @@ def deriveSpeedLimit(row):
 
 
 # read local config.ini file
+rel_path = './'
 config = configparser.ConfigParser()
-config.read('config.ini')
+config.read(rel_path + 'config.ini')
 
 # get from config.ini
-path = config['FILE_SETTINGS']['PATH']
 dir_output = config['FILE_SETTINGS']['DIR_OUTPUT']
-gpkg_src = path + dir_output + config['FILE_SETTINGS']['GPKG_NAME']
-gpkg_out = path + dir_output + config['FILE_SETTINGS']['GPKG_NAME_BUF']
+gpkg_src = rel_path + dir_output + config['FILE_SETTINGS']['GPKG_NAME']
+gpkg_out = rel_path + dir_output + config['FILE_SETTINGS']['GPKG_NAME_BUF']
 
 """
 Prepare data for processing
@@ -232,26 +232,4 @@ df_bike_acc_out['speed_rel'] = np.where((df_bike_acc_out['IstPKW'] == 1) |
 df_bike_acc_out.to_file(gpkg_src, layer='bike_accidents_ext', driver='GPKG')
 print("- GeoPackage updated")
 
-# """
-# Temp: data validation
-# """
-# sel_guid = [13293, 15384, 19527, 19014, 13460, 8046, 657, 13952, 3617, 11973]
-# df_sel = df_concat_u.loc[(df_concat_u['GUID'].isin(sel_guid))]
-
-# ToDo: count join results (how many roads in area of accident)
-
-"""
-df_acc = pd.merge(df_acc_x_rva[['GUID','geometry']], df_acc_x_rva[['GUID','rank_rva']], how='left', on="GUID")
-
-df_road_acc = gpd.sjoin(df_roads, df_acc, how='left', predicate='intersects')
-
-df2 = df_road_acc.groupby(['element_nr'])['index_right'].count().reset_index()
-df2.rename(columns={'index_right':'acc_cnt'}, inplace=True)
-
-df_roads_cnt = pd.merge(df_roads,df2)
-
-df_roads_cnt = df_roads_cnt.loc[df_roads_cnt['laenge'] > 100]
-df_roads_cnt['kpi'] = df_roads_cnt['acc_cnt'] / df_roads_cnt['laenge'] * 100
-
-df_roads_cnt.to_file(path + dir_output + gpkg_name_buf, layer='buf5_road_acc_cnt', driver='GPKG')
-"""
+print("\n--- End Processing ---")

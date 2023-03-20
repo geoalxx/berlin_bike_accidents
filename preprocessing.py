@@ -82,28 +82,28 @@ def preprocRVARank(row):
     if row['rva_typ'] == 'Radwege':
         if row['sorvt_typ'] == 'Radfahrerfurt Z 340':
             # classified as 'Radweg', however, road needs to be crossed and therefore less safe
-            return 2
+            return 1
         else:
-            return 3
+            return 4
     elif row['rva_typ'] == 'Schutzstreifen':
-        return 2
+        return 3
     elif row['rva_typ'] == 'Radfahrstreifen':
-        return 2
+        return 3
     elif row['rva_typ'] == 'Bussonderfahrstreifen':
-        return 1
+        return 2
 
     return 0
 
 
 # read local config.ini file
+rel_path = './'
 config = configparser.ConfigParser()
-config.read('config.ini')
+config.read(rel_path + 'config.ini')
 
 # get from config.ini
-path = config['FILE_SETTINGS']['PATH']
 dir_input = config['FILE_SETTINGS']['DIR_INPUT']
 dir_output = config['FILE_SETTINGS']['DIR_OUTPUT']
-gpkg_out = path + dir_output + config['FILE_SETTINGS']['GPKG_NAME']
+gpkg_out = rel_path + dir_output + config['FILE_SETTINGS']['GPKG_NAME']
 target_crs = config['CONFIG']['TARGET_CRS']
 
 """
@@ -123,18 +123,16 @@ Preprocessing:
 => combine all data into one geopackage    
 """
 
-# ToDo: convert Strings to ordinal values
-
 print("--- Start Processing ---")
 
-### read accident statistics data
+## read accident statistics data
 years = [2018, 2019, 2020, 2021]
 
 # read source files
 files = []
 for year in years:
     print(f'Loading accidents for year {year}')
-    df = gpd.read_file(path + dir_input + f'Unfallorte{year}_LinRef.shp',
+    df = gpd.read_file(rel_path + dir_input + f'Unfallorte{year}_LinRef.shp',
                        ignore_fields=['UREGBEZ',
                                       'UIDENTSTLA',
                                       'USTRZUSTAN',
@@ -172,11 +170,11 @@ df_bike_acc_all = pd.concat(dfs, ignore_index=True)
 df_bike_acc_all['GUID'] = df_bike_acc_all.index
 df_bike_acc_all.to_file(gpkg_out, layer='bike_accidents', driver='GPKG')
 
-### ShapeFiles from FIS broker and add to GeoPackage
+## ShapeFiles from FIS broker and add to GeoPackage
 
 # road type data
 file_name = 'fis_strassenabschnitte'
-df_roads = gpd.read_file(path + dir_input + f'{file_name}.shp',
+df_roads = gpd.read_file(rel_path + dir_input + f'{file_name}.shp',
                          ignore_fields=['strassensc', 'bezirk', 'stadtteil', 'verkehrseb', 'beginnt_be', 'endet_bei_',
                                         'gueltig_vo', 'okstra_id'])
 df_roads['rank'] = df_roads.apply(preprocRoadRank, axis=1)
@@ -185,7 +183,7 @@ df_roads.to_file(gpkg_out, layer=file_name, driver='GPKG')
 
 # speed limit data
 file_name = 'fis_tempolimit'
-df_speed = gpd.read_file(path + dir_input + f'{file_name}.shp', ignore_fields=['durch_t', 'dann_t'])
+df_speed = gpd.read_file(rel_path + dir_input + f'{file_name}.shp', ignore_fields=['durch_t', 'dann_t'])
 for idx, row in df_speed.iterrows():
     df_speed.loc[idx, 'time_from'], df_speed.loc[idx, 'time_to'], df_speed.loc[idx, 'day_from'], df_speed.loc[
         idx, 'day_to'] = preprocSpeedLimit(row)
@@ -195,7 +193,7 @@ df_speed.to_file(gpkg_out, layer=file_name, driver='GPKG')
 
 # bicycle lane data
 file_name = 'fis_rva'
-df_rva = gpd.read_file(path + dir_input + f'{file_name}.shp',
+df_rva = gpd.read_file(rel_path + dir_input + f'{file_name}.shp',
                        ignore_fields=['segm_bez', 'stst_str', 'stor_name', 'ortstl', 'laenge'])
 df_rva['rank'] = df_rva.apply(preprocRVARank, axis=1).astype('Int64')
 df_rva = setCRS(df_rva, target_crs)
