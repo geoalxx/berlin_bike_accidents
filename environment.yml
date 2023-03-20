@@ -3,7 +3,7 @@ name: berlin_bike_accidents
 channels:
 - conda-forge
 dependencies:
-- python==3.10.9
+- python==3.9.15
 - geopandas==0.12.2
 - seaborn==0.12.2
 - esda==2.4.1
